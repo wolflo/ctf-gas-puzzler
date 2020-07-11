@@ -1,0 +1,15 @@
+{
+  "name": "gas-puzzler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "node src/compile.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bn.js": "^5.1.2"
+  }
+}

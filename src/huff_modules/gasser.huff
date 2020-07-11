@@ -1,0 +1,55 @@
+// stack: [ top bottom ]
+
+// --- Constants ---
+// [] -> [ constant ]
+
+// gas consumed before call: 896
+// gas consumed by call: 9700 (but returns 2300 gas stipend if unused)
+// gas consumed between call and `gas jump` segment: 38
+// index of desired jumpdest: 0xe0 (224)
+// 896 + 9700 + 38 + 224 = 10858
+#define macro PUSH_CALL_GAS = takes(0) returns (1) { 10858 }
+
+// solve()
+#define macro PUSH_SOLVE_FUNC_SIG = takes(0) returns(1) { 0x890d6908 }
+#define macro PUSH_TARGET = takes(0) returns (1) { 0x9bc38B4A308fc70Ea0f6663f06D1be7Fd5175d50 }
+
+// --- Main ---
+
+// [ call_success ] -> []
+template <throw_dst>
+#define macro CHECK_SUCCESS = takes(0) returns(0) {
+  iszero throw_dst jumpi
+}
+
+// [] -> []
+#define macro RUNTIME = takes(0) returns(0) {
+  // if calldata is non-empty, run the call on GasPuzzler
+  0x00 dup1 calldatasize gt gas_me_up jumpi
+
+  // else, burn 2300 gas and return
+  dup1 sload extcodehash extcodehash blockhash blockhash blockhash mul origin
+  0x00 dup1 return
+
+  // [ 0x00 ]
+  gas_me_up:
+    PUSH_SOLVE_FUNC_SIG() 0xe0 shl dup2 mstore // [ 00 ]
+    dup1 dup1 0x04 dup2 dup1 PUSH_TARGET() PUSH_CALL_GAS() call // [ success 00 ]
+    CHECK_SUCCESS<throw_dst>()  // [ 00 ]
+
+    // transfer loot to caller
+    dup1 dup1 dup1 dup1 selfbalance caller gas call stop
+
+  throw_dst:
+    0x00 dup1 revert
+
+  invalid
+}
+
+// [] -> []
+template <runtime_size, constructor_size>
+#define macro CONSTRUCTOR = takes(0) returns (0) {
+  0x00 <runtime_size> dup1 <constructor_size> dup4 codecopy // [ runtime_len 0x0 ]
+  swap1 return
+}
+
